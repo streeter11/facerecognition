@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/Navigation';
+import SignIn from './components/SignIn/SignIn';
 import Logo from './components/Logo/Logo';
 import Input from './components/Input/Input';
 import Rank from './components/Rank/Rank';
@@ -32,7 +33,8 @@ class App extends Component {
     this.state = {
       entry: "",
       imageUrl: "",
-      box: {}
+      box: {},
+      route: "loggedOut"
     }
   }
 
@@ -50,7 +52,6 @@ class App extends Component {
   }
 
   displayFaceBox = (box) => {
-    console.log(box);
     this.setState({box});
   } 
 
@@ -65,20 +66,29 @@ class App extends Component {
     .catch(err => console.log(err));
   }
 
+  onRouteChange = (route) => {
+    this.setState({route: route})
+  }
+
   render(){
     return (
-      <div className="App">
+      <div className= "App">
         <Particles className= "particles"
           params={particlesOptions}
         />
-        <Navigation />
-        <Logo />
-        <Rank />
-        <Input onEntryChange= {this.onEntryChange} onButtonSubmit= {this.onButtonSubmit}/>
-        <Image box= {this.state.box} imageUrl= {this.state.imageUrl}/>
+        <Navigation onRouteChange= {this.onRouteChange}/>
+        { this.state.route === "loggedOut"
+          ? <SignIn onRouteChange= {this.onRouteChange}/>
+          : <div>
+            <Logo />
+            <Rank />
+            <Input onEntryChange= {this.onEntryChange} onButtonSubmit= {this.onButtonSubmit}/>
+            <Image box= {this.state.box} imageUrl= {this.state.imageUrl}/>
+            </div>    
+        }
       </div>
     );
   }
-}
+};
 
 export default App;
