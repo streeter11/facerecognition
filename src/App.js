@@ -3,6 +3,7 @@ import './App.css';
 import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/Navigation';
 import SignIn from './components/SignIn/SignIn';
+import Register from './components/Register/Register';
 import Logo from './components/Logo/Logo';
 import Input from './components/Input/Input';
 import Rank from './components/Rank/Rank';
@@ -34,7 +35,8 @@ class App extends Component {
       entry: "",
       imageUrl: "",
       box: {},
-      route: "loggedOut"
+      route: "loggedOut",
+      isSignedIn: false
     }
   }
 
@@ -67,24 +69,34 @@ class App extends Component {
   }
 
   onRouteChange = (route) => {
+    if (route === "loggedIn") {
+      this.setState({isSignedIn: true})
+    } else {
+      this.setState({isSignedIn: false})
+    }
     this.setState({route: route})
   }
 
-  render(){
+  render() {
+    const { isSignedIn, imageUrl, box, route } = this.state; 
     return (
       <div className= "App">
         <Particles className= "particles"
           params={particlesOptions}
         />
-        <Navigation onRouteChange= {this.onRouteChange}/>
-        { this.state.route === "loggedOut"
-          ? <SignIn onRouteChange= {this.onRouteChange}/>
-          : <div>
+        <Navigation isSignedIn= {isSignedIn} onRouteChange= {this.onRouteChange}/>
+        { route === "loggedIn"
+          ? <div>
             <Logo />
             <Rank />
             <Input onEntryChange= {this.onEntryChange} onButtonSubmit= {this.onButtonSubmit}/>
-            <Image box= {this.state.box} imageUrl= {this.state.imageUrl}/>
-            </div>    
+            <Image box= {box} imageUrl= {imageUrl}/>
+            </div>  
+          : (
+            route === "loggedOut"
+            ? <SignIn onRouteChange= {this.onRouteChange}/>
+            : <Register onRouteChange= {this.onRouteChange}/>
+          )            
         }
       </div>
     );
