@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import './App.css';
-import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/Navigation';
 import SignIn from './components/SignIn/SignIn';
 import Register from './components/Register/Register';
@@ -10,10 +9,6 @@ import Rank from './components/Rank/Rank';
 import Image from './components/Image/Image';
 import Particles from 'react-particles-js';
 
-const app = new Clarifai.App({
-  apiKey: "7813f68ee8c54ab3b510d96b07d019bd"
- });
- 
 const particlesOptions = {
   particles: {
     number: {
@@ -27,18 +22,43 @@ const particlesOptions = {
 }
 
 // function App() {   //new syntax
+const initialState = {
+  entry: "",
+  imageUrl: "",
+  box: {},
+  route: "loggedOut",
+  isSignedIn: false,
+  user: {
+    id: "",
+    email: "",
+    name: "",
+    entries: 0,
+    joined: ""
+  }
+}
 
 class App extends Component {
   constructor() {
     super();
-    this.state = {
-      entry: "",
-      imageUrl: "",
-      box: {},
-      route: "loggedOut",
-      isSignedIn: false
-    }
+    this.state = initialState;
   }
+
+  loadUser = (data) => {
+    this.setState({user: {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      entries: data.entries,
+      joined: data.joined
+    }
+    })
+  } 
+
+  // componentDidMount() {
+  //   fetch("http://localhost:3001")
+  //   .then(response => response.json())
+  //   .then(console.log)
+  // }
 
   calculateFaceLocation = (data) => {
     const detectedFace = (data.outputs[0].data.regions[0].region_info.bounding_box);
@@ -63,8 +83,32 @@ class App extends Component {
 
   onButtonSubmit = () => {
     this.setState({imageUrl: this.state.entry});
-    app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.entry)
-    .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+    fetch("https://api-facerecognition.herokuapp.com/imageurl", {
+          method: "post",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            entry: this.state.entry
+          })
+        })
+        .then(response => response.json())
+        // .catch(err =>{console.log(err)})
+    .then(response => {
+      if(response){
+        fetch("https://api-facerecognition.herokuapp.com/image", {
+          method: "put",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            id: this.state.user.id
+          })
+        })
+        .then(response => response.json())
+        .then(count => {
+          this.setState(Object.assign(this.state.user, {entries: count}))
+        })
+        .catch(err => console.log(err))
+      }
+      this.displayFaceBox(this.calculateFaceLocation(response));
+    })
     .catch(err => console.log(err));
   }
 
@@ -72,13 +116,14 @@ class App extends Component {
     if (route === "loggedIn") {
       this.setState({isSignedIn: true})
     } else {
-      this.setState({isSignedIn: false})
+      this.setState(initialState)
     }
     this.setState({route: route})
   }
 
   render() {
-    const { isSignedIn, imageUrl, box, route } = this.state; 
+    const { isSignedIn, imageUrl, box, route } = this.state;
+    const { name, entries } = this.state.user; 
     return (
       <div className= "App">
         <Particles className= "particles"
@@ -88,14 +133,14 @@ class App extends Component {
         { route === "loggedIn"
           ? <div>
             <Logo />
-            <Rank />
+            <Rank name= {name} entries= {entries} />
             <Input onEntryChange= {this.onEntryChange} onButtonSubmit= {this.onButtonSubmit}/>
             <Image box= {box} imageUrl= {imageUrl}/>
             </div>  
           : (
             route === "loggedOut"
-            ? <SignIn onRouteChange= {this.onRouteChange}/>
-            : <Register onRouteChange= {this.onRouteChange}/>
+            ? <SignIn loadUser= {this.loadUser} onRouteChange= {this.onRouteChange}/>
+            : <Register loadUser= {this.loadUser} onRouteChange= {this.onRouteChange}/>
           )            
         }
       </div>
